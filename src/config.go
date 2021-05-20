@@ -21,6 +21,7 @@ func (p *Prontab) RegisterConfig(location string) []error {
 func parseConfig(location string) (jobs []*externalJob, errs []error) {
 	file, err := os.Open(location)
 	defer file.Close()
+
 	if err != nil {
 		errs = append(errs, err)
 		return jobs, errs
@@ -28,6 +29,7 @@ func parseConfig(location string) (jobs []*externalJob, errs []error) {
 
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
+
 	for scanner.Scan() {
 		if job, err := parseLine(scanner.Text()); err != nil {
 			errs = append(errs, err)
@@ -46,12 +48,16 @@ func parseLine(s string) (j *externalJob, err error) {
 		return j, errors.New(message)
 	}
 
-	schedule, err := parseSchedule(strings.Join(line[:5], " "))
+	tLine := strings.Join(line[:6], " ")
+
+	schedule, err := parseSchedule(tLine)
+
 	if err != nil {
 		return j, err
 	}
 
-	action, err := parseExternalAction(strings.Join(line[6:], " "))
+	aLine := strings.Join(line[6:], " ")
+	action, err := parseExternalAction(aLine)
 	if err != nil {
 		return j, err
 	}

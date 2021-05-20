@@ -30,7 +30,7 @@ var (
 func parseSchedule(s string) (t schedule, err error) {
 	s = matchSpaces.ReplaceAllLiteralString(s, " ")
 	parts := strings.Split(s, " ")
-	if len(parts) != 5 {
+	if len(parts) != 6 {
 		return schedule{}, errors.New("Schedule string must have six components like * * * * * *")
 	}
 

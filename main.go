@@ -18,9 +18,9 @@ func main() {
 
 	results, errors := p.Test()
 	for i := range results {
-		fmt.Printf("Result: %v\n\n", results[i])
+		fmt.Printf("Result: %v\n", string(results[i]))
 	}
 	for i := range errors {
-		fmt.Printf("Error: %v\n\n", errors[i])
+		fmt.Printf("Error: %v\n", errors[i])
 	}
 }

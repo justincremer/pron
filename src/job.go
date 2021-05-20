@@ -37,13 +37,16 @@ type internalJob struct {
 // Initializes the tab and registers jobs
 func Create(t time.Duration, file string) *Prontab {
 	p := &Prontab{t: time.NewTicker(t)}
+	p.initialize(file)
+	return p
+}
+
+func (p *Prontab) initialize(file string) {
 	if errs := p.RegisterConfig(file); len(errs) != 0 {
 		for _, e := range errs {
 			panic(e)
 		}
 	}
-
-	return p
 }
 
 func (p *Prontab) Test() (results [][]byte, errs []error) {

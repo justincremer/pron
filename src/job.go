@@ -8,6 +8,7 @@ import (
 type Prontab struct {
 	t *time.Ticker
 	j jobs
+	e []error
 }
 
 type jobs struct {
@@ -33,9 +34,26 @@ type internalJob struct {
 	action internalAction
 }
 
-// Initializes the tab
-func Create(t time.Duration) *Prontab {
-	return &Prontab{t: time.NewTicker(t)}
+// Initializes the tab and registers jobs
+func Create(t time.Duration, file string) *Prontab {
+	p := &Prontab{t: time.NewTicker(t)}
+	if errs := p.RegisterConfig(file); len(errs) != 0 {
+		for _, e := range errs {
+			panic(e)
+		}
+	}
+
+	return p
+}
+
+func (p *Prontab) Test() (results [][]byte, errs []error) {
+	for _, j := range p.j.externalJobs {
+		res, err := j.Dispatch()
+		results = append(results, res)
+		errs = append(errs, err)
+	}
+
+	return results, errs
 }
 
 // Emptys the job buffer and stops the clock

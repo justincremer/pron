@@ -1,20 +1,26 @@
 package main
 
 import (
-// "fmt"
-// "log"
+	"fmt"
+	"time"
 
-// "github.com/justincremer/pron/src"
+	pron "github.com/justincremer/pron/src"
+)
+
+const (
+	t          time.Duration = time.Second
+	configFile string        = "/home/xiuxiu/.config/pron/prontab"
 )
 
 func main() {
-	// cal, err := pron.CreateCalendar("123456", "123456", "12")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Printf("Date: %d\nTime: %d\nWeekday: %d\n", cal.D, cal.T, cal.WD)
+	p := pron.Create(t, configFile)
+	defer p.Shutdown()
 
-	// task.Test("git status --porcelain")
-	// task.Test("sudo pacman -Q emacs")
-	// task.Test("ls -lah /proc/1/attr")
+	results, errors := p.Test()
+	for i := range results {
+		fmt.Printf("Result: %v\n\n", results[i])
+	}
+	for i := range errors {
+		fmt.Printf("Error: %v\n\n", errors[i])
+	}
 }

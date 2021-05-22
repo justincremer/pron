@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	t          time.Duration = time.Second
 	configFile string        = "/home/xiuxiu/.config/pron/prontab"
+	t          time.Duration = time.Second
 )
 
 func main() {

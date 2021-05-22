@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-// Top level pron struct
-type Prontab struct {
-	t       *time.Ticker
-	j       jobs
-	outChan chan []byte
-	errChan chan error
-}
-
-type jobs struct {
-	externalJobs []externalJob
-	internalJobs []internalJob
-}
-
 // Interface for external and internal jobs
 type job interface {
 	Register(schedule string, tab *Prontab) error
@@ -36,49 +23,6 @@ type internalJob struct {
 	action internalAction
 }
 
-// Initializes the tab and registers jobs
-func Create(t time.Duration, file string) *Prontab {
-	writer := make(chan []byte)
-	err := make(chan error)
-
-	p := &Prontab{t: time.NewTicker(t), outChan: writer, errChan: err}
-	p.initialize(file)
-
-	func() {
-		for t := range p.t.C {
-			p.dispatchJobs(t, writer, err)
-		}
-	}()
-
-	return p
-}
-
-// Reads config file and propogates the Prontab jobs slice
-func (p *Prontab) initialize(file string) {
-	if errs := p.RegisterConfig(file); len(errs) != 0 {
-		for _, e := range errs {
-			panic(e)
-		}
-	}
-}
-
-// Starts auto dispatching commands
-func (p *Prontab) Startup() {
-	for t := range p.t.C {
-		p.dispatchJobs(t, p.outChan, p.errChan)
-	}
-}
-
-// Emptys the job buffer, stops the clock, and closes channels
-func (p *Prontab) Shutdown() {
-	defer close(p.outChan)
-	defer close(p.errChan)
-
-	p.j.externalJobs = []externalJob{}
-	p.j.internalJobs = []internalJob{}
-	p.t.Stop()
-}
-
 func (p *Prontab) log(t time.Time) {
 	currentTime := fmt.Sprintf("%d:%d:%d", t.Hour(), t.Minute(), t.Second())
 	// fmt.Printf("%s", currentTime)
@@ -93,23 +37,6 @@ func (p *Prontab) log(t time.Time) {
 	}
 }
 
-func (p *Prontab) dispatchJobs(t time.Time, writer chan []byte, err chan error) {
-	tick := getTick(t)
-	p.log(t)
-
-	for _, j := range p.j.externalJobs {
-		if j.Scheduled(tick) {
-			go j.Dispatch(writer, err)
-		}
-	}
-
-	for _, j := range p.j.internalJobs {
-		if j.Scheduled(tick) {
-			go j.Dispatch(writer, err)
-		}
-	}
-}
-
 // Registers an external job to the tab
 func (a *externalJob) Register(p *Prontab) {
 	p.j.externalJobs = append(p.j.externalJobs, *a)
@@ -120,18 +47,39 @@ func (a *internalJob) Register(p *Prontab) {
 	p.j.internalJobs = append(p.j.internalJobs, *a)
 }
 
+func (p *Prontab) dispatchJobs(t time.Time, writer chan []byte, err chan error) {
+	tick := getTick(t)
+	p.log(t)
+
+	for _, j := range p.j.externalJobs {
+		if j.Scheduled(tick) {
+			go ioFunctor(j.Dispatch)(writer, err)
+		}
+	}
+
+	for _, j := range p.j.internalJobs {
+		if j.Scheduled(tick) {
+			go ioFunctor(j.Dispatch)(writer, err)
+		}
+	}
+}
+
+func ioFunctor(fn func() ([]byte, error)) func(writer chan []byte, err chan error) {
+	return func(writer chan []byte, err chan error) {
+		r, e := fn()
+		writer <- r
+		err <- e
+	}
+}
+
 // Internal action dispatch
-func (j *internalJob) Dispatch(writer chan []byte, err chan error) {
-	r, e := j.action.fn()
-	writer <- r
-	err <- e
+func (j *internalJob) Dispatch() ([]byte, error) {
+	return j.action.fn()
 }
 
 // External action dispatch
-func (j *externalJob) Dispatch(writer chan []byte, err chan error) {
-	r, e := j.action.cmd.Output()
-	writer <- r
-	err <- e
+func (j *externalJob) Dispatch() ([]byte, error) {
+	return j.action.cmd.Output()
 }
 
 func (j *externalJob) Scheduled(t tick) bool {

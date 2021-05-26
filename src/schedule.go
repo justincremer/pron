@@ -26,6 +26,25 @@ var (
 	matchRange  = regexp.MustCompile("^(\\d+)-(\\d+)$")
 )
 
+func (s *schedule) Sprintf() (res string) {
+	format := func(title string, category map[int]struct{}) {
+		res += fmt.Sprintf("%s\n", title)
+		for i, v := range category {
+			res += fmt.Sprintf("%d: %s ", i, v)
+		}
+		res += "\n"
+	}
+
+	format("Day of week", s.dow)
+	format("Month", s.month)
+	format("Day", s.day)
+	format("Hour", s.hour)
+	format("Minute", s.min)
+	format("Second", s.sec)
+
+	return res
+}
+
 // Parse schedule string and create a schedule or error if syntax is wrong
 func parseSchedule(s string) (t schedule, err error) {
 	s = matchSpaces.ReplaceAllLiteralString(s, " ")
@@ -139,6 +158,33 @@ func parsePart(s string, min, max int) (map[int]struct{}, error) {
 	}
 
 	return res, nil
+}
+
+func scheduled(t tick, s schedule) bool {
+	if _, ok := s.sec[t.sec]; !ok {
+		return false
+	}
+
+	if _, ok := s.min[t.min]; !ok {
+		return false
+	}
+
+	if _, ok := s.hour[t.hour]; !ok {
+		return false
+	}
+
+	// cummulative day and dayOfWeek, as it should be
+	_, day := s.day[t.day]
+	_, dow := s.dow[t.dow]
+	if !day && !dow {
+		return false
+	}
+
+	if _, ok := s.month[t.month]; !ok {
+		return false
+	}
+
+	return true
 }
 
 // Time object

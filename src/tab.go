@@ -1,6 +1,9 @@
 package pron
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // Top level pron struct
 type Prontab struct {
@@ -23,9 +26,9 @@ func Create(t time.Duration, file string) *Prontab {
 	p := &Prontab{t: time.NewTicker(t), outChan: writer, errChan: err}
 	p.initialize(file)
 
-	func() {
+	go func() {
 		for t := range p.t.C {
-			p.dispatchJobs(t, writer, err)
+			p.DispatchJobs(t, writer, err)
 		}
 	}()
 	return p
@@ -43,7 +46,7 @@ func (p *Prontab) initialize(file string) {
 // Starts auto dispatching commands
 func (p *Prontab) Startup() {
 	for t := range p.t.C {
-		p.dispatchJobs(t, p.outChan, p.errChan)
+		p.DispatchJobs(t, p.outChan, p.errChan)
 	}
 }
 
@@ -55,4 +58,17 @@ func (p *Prontab) Shutdown() {
 	p.j.externalJobs = []externalJob{}
 	p.j.internalJobs = []internalJob{}
 	p.t.Stop()
+}
+
+func (p *Prontab) log(t time.Time) {
+	currentTime := fmt.Sprintf("%d:%d:%d", t.Hour(), t.Minute(), t.Second())
+
+	select {
+	case s := <-p.outChan:
+		fmt.Printf("%s %s\n", currentTime, s)
+	case e := <-p.errChan:
+		fmt.Printf("%s %v\n", currentTime, e)
+	default:
+		fmt.Printf("%s\n", currentTime)
+	}
 }

@@ -41,10 +41,12 @@ func parseConfig(location string) (jobs []*externalJob, errs []error) {
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 
+	// for line in lines
 	for scanner.Scan() {
 		if job, err := parseLine(scanner.Text()); err != nil {
 			errs = append(errs, err)
 		} else {
+			fmt.Println(job.action.cmd.String())
 			jobs = append(jobs, job)
 		}
 	}
@@ -60,12 +62,12 @@ func parseLine(s string) (j *externalJob, err error) {
 	}
 
 	tLine := strings.Join(line[:6], " ")
-
 	schedule, err := parseSchedule(tLine)
-
 	if err != nil {
 		return j, err
 	}
+
+	fmt.Println(schedule.Sprintf())
 
 	aLine := strings.Join(line[6:], " ")
 	action, err := parseExternalAction(aLine)
@@ -82,8 +84,14 @@ func parseExternalAction(i string) (a externalAction, err error) {
 	case 0:
 		return externalAction{}, errors.New("Command must not be nil")
 	case 1:
-		return externalAction{cmd: exec.Command(argv[0])}, nil
+		// action := externalAction{cmd: exec.Command(argv[0])}
+		// action.cmd.Args = append(action.cmd.Args, "&")
+		// return action, nil
+		return externalAction{cmd: exec.Command(argv[0], "&")}, nil
 	default:
+		// action := externalAction{cmd: exec.Command(argv[0], argv[1:]...)}
+		// action.cmd.Args = append(action.cmd.Args, "&")
+		// return action, nil
 		return externalAction{cmd: exec.Command(argv[0], argv[1:]...)}, nil
 	}
 }

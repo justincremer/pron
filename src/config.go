@@ -20,10 +20,10 @@ type externalAction struct {
 }
 
 // Parses config file and registers externalJobs
-func (p *Prontab) RegisterConfig(location string) []error {
-	jobs, errs := parseConfig(location)
+func (p *Prontab) registerConfig(path string) []error {
+	jobs, errs := parseConfig(path)
 	for _, j := range jobs {
-		j.Register(p)
+		j.register(p)
 	}
 
 	return errs

@@ -1,0 +1,2 @@
+Write(p []byte) (n int, err error)
+Write appends the contents of p to the buffer, growing the buffer as needed.

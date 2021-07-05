@@ -3,11 +3,12 @@ package pron
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 )
 
 // Interface for external and internal jobs
 type job interface {
-	Register(schedule string, tab *Prontab) error
+	Register(schedule string, tab *Tab) error
 	Dispatch() ([]byte, error)
 }
 
@@ -23,13 +24,33 @@ type internalJob struct {
 	action internalAction
 }
 
+// Table of time maps for a given job
+type schedule struct {
+	sec   map[int]struct{}
+	min   map[int]struct{}
+	hour  map[int]struct{}
+	day   map[int]struct{}
+	month map[int]struct{}
+	dow   map[int]struct{}
+}
+
+// Native go method
+type internalAction struct {
+	fn func(...interface{}) ([]byte, error)
+}
+
+// External arbitrary program
+type externalAction struct {
+	cmd *exec.Cmd
+}
+
 // Registers an external job to the tab
-func (a *externalJob) register(p *Prontab) {
+func (a *externalJob) register(p *Tab) {
 	p.j.externalJobs = append(p.j.externalJobs, *a)
 }
 
 // Registers an internal job to the tab
-func (a *internalJob) register(p *Prontab) {
+func (a *internalJob) register(p *Tab) {
 	p.j.internalJobs = append(p.j.internalJobs, *a)
 }
 

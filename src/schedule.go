@@ -83,14 +83,14 @@ func parseSchedule(s string) (t schedule, err error) {
 		return t, err
 	}
 
-	//  day/dayOfWeek combination
+	//  day/dow combination
 	switch {
-	case len(t.day) < 31 && len(t.dow) == 7: // day set, but not dayOfWeek, clear dayOfWeek
+	case len(t.day) < 31 && len(t.dow) == 7: // day set, but not dow, clear dow
 		t.dow = make(map[int]struct{})
-	case len(t.dow) < 7 && len(t.day) == 31: // dayOfWeek set, but not day, clear day
+	case len(t.dow) < 7 && len(t.day) == 31: // dow set, but not day, clear day
 		t.day = make(map[int]struct{})
 	default:
-		// both day and dayOfWeek are * or both are set, use combined
+		// both day and dow are * or both are set, use combined
 		// i.e. don't do anything here
 	}
 

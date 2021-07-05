@@ -6,9 +6,9 @@ import (
 )
 
 // Top level pron struct
-type Prontab struct {
-	t       *time.Ticker
-	j       jobs
+type Tab struct {
+	ticker  *time.Ticker
+	jobs    jobs
 	outChan chan []byte
 	errChan chan error
 }
@@ -19,11 +19,11 @@ type jobs struct {
 }
 
 // Initializes the tab and registers jobs
-func Create(t time.Duration, file string) *Prontab {
+func Create(t time.Duration, file string) *Tab {
 	writer := make(chan []byte)
 	err := make(chan error)
 
-	p := &Prontab{t: time.NewTicker(t), outChan: writer, errChan: err}
+	p := &Tab{t: time.NewTicker(t), outChan: writer, errChan: err}
 	p.initialize(file)
 
 	go func() {
@@ -34,8 +34,8 @@ func Create(t time.Duration, file string) *Prontab {
 	return p
 }
 
-// Reads config file and propogates the Prontab jobs slice
-func (p *Prontab) initialize(file string) {
+// Reads config file and propogates the Tab jobs slice
+func (p *Tab) initialize(file string) {
 	if errs := p.registerConfig(file); len(errs) != 0 {
 		for _, e := range errs {
 			panic(e)
@@ -44,14 +44,14 @@ func (p *Prontab) initialize(file string) {
 }
 
 // Starts auto dispatching commands
-func (p *Prontab) Startup() {
+func (p *Tab) Startup() {
 	for t := range p.t.C {
 		p.DispatchJobs(t, p.outChan, p.errChan)
 	}
 }
 
 // Emptys the job buffer, stops the clock, and closes channels
-func (p *Prontab) Shutdown() {
+func (p *Tab) Shutdown() {
 	defer close(p.outChan)
 	defer close(p.errChan)
 
@@ -60,7 +60,7 @@ func (p *Prontab) Shutdown() {
 	p.t.Stop()
 }
 
-func (p *Prontab) DispatchJobs(t time.Time, writer chan []byte, err chan error) {
+func (p *Tab) DispatchJobs(t time.Time, writer chan []byte, err chan error) {
 	tick := getTick(t)
 	for _, j := range p.j.externalJobs {
 		if j.scheduled(tick) {
@@ -76,13 +76,13 @@ func (p *Prontab) DispatchJobs(t time.Time, writer chan []byte, err chan error) 
 	p.log(t)
 }
 
-func (p *Prontab) RegisterJobs(path string, internalJobs *[]internalJob) *[]error {
+func (p *Tab) RegisterJobs(path string, internalJobs *[]internalJob) *[]error {
 	errs := p.registerConfig(path)
 	// register internal jobs
 	return &errs
 }
 
-func (p *Prontab) log(t time.Time) {
+func (p *Tab) log(t time.Time) {
 	currentTime := fmt.Sprintf("%d:%d:%d", t.Hour(), t.Minute(), t.Second())
 
 	select {
